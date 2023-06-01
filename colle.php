@@ -1,21 +1,23 @@
 <?php
 
-colle(5, 3, [[0, 0], [3, 2]]);
+colle(5, 5, []);
 
 function colle($x, $y, array $coords = [])
 {
-    system("clear");
-    $table = display($x, $y, $coords);
-    prompt($x, $y, $coords, $table);
+    if ($x > 0 && $y > 0) {
+        system("clear");
+        $table = display($x, $y, $coords);
+        prompt($x, $y, $coords, $table);
+    }
 }
 
 function display($x, $y, $coords)
 {
-    $border = border_line($x);
+    $border = border_line($x - 1);
     $table = "";
-    for ($i = 0; $i <= $y; $i++) {
+    for ($i = 0; $i < $y; $i++) {
         $table .= $border;
-        for ($j = 0; $j <= $x; $j++) {
+        for ($j = 0; $j < $x; $j++) {
             $table .= "| " . isEmpty($j, $i, $coords) . " ";
         }
         $table .= "|\n";
@@ -36,55 +38,139 @@ function isEmpty($x, $y, $coords)
 }
 function prompt($x, $y, $coords, $table)
 {
-    $prompt = readline("$> ");
+    $playerone = array();
+    $playertwo = array();
+    $count1 = 0;
+    $count2 = 0;
+    $count3 = 0;
+    $win1 = 0;
+    $win2 = 0;
+    $player = "one";
+    echo "Player 1, place your 2 ships :\n";
+    $prompt = readline("Player 1 $> ");
     do {
+
         if (strpos($prompt, "query") !== false) {
             $coord = explode(" ", $prompt)[1];
             $coord = explode(",", $coord);
-            if (isEmpty(trim(substr($coord[0], 1, strlen($coord[0]) - 1)), trim(substr($coord[1], 0, 1)), $coords) == " ") {
-                echo "empty\n";
+            // var_dump($player);
+            if ($player == "one") {
+                if (isEmpty(trim(substr($coord[0], 1, strlen($coord[0]) - 1)), trim(substr($coord[1], 0, 1)), $playertwo) == " ") {
+                    echo "Player 1, you didn’t touch anything.\n";
+                } else {
+                    $win2++;
+                    echo "Player 1, you touched a boat of player 2\n";
+                }
+                $player = "two";
             } else {
-                echo "full\n";
+                if (isEmpty(trim(substr($coord[0], 1, strlen($coord[0]) - 1)), trim(substr($coord[1], 0, 1)), $playerone) == " ") {
+                    echo "Player 2, you didn’t touch anything.\n";
+                } else {
+                    $win1++;
+                    echo "Player 2, you touched a boat of player 1\n";
+                }
+                $player = "one";
             }
-            $prompt = readline("$> ");
+            // var_dump($playerone);
+            // var_dump($playertwo);
         } elseif (strpos($prompt, "add") !== false) {
             $coord = explode(" ", $prompt)[1];
             $coord = explode(",", $coord);
-
             $coord = [intval(trim(substr($coord[0], 1, strlen($coord[0]) - 1))), intval(trim(substr($coord[1], 0, 1)))];
             $add = add_coord($coord, $coords, $table);
+
             if ($add != "") {
                 echo $add;
+            } else {
+                if ($player == "one") {
+                    add_coord($coord, $playerone, $table);
+                } else {
+                    add_coord($coord, $playertwo, $table);
+                }
+                if ($count1 < 3) {
+                    $count1++;
+                    $player = "one";
+                }
+
+                if ($count1 >= 2) {
+                    if ($count1 == 2) {
+                        echo "Player 2, place your 2 ships :\n";
+                    }
+                    $count2++;
+                    $player = "two";
+                }
             }
-            $prompt = readline("$> ");
         } elseif (strpos($prompt, "remove") !== false) {
             $coord = explode(" ", $prompt)[1];
             $coord = explode(",", $coord);
-
             $coord = [intval(trim(substr($coord[0], 1, strlen($coord[0]) - 1))), intval(trim(substr($coord[1], 0, 1)))];
             $remove = remove_coord($coord, $coords);
             if ($remove != "") {
                 echo $remove;
             }
-            $prompt = readline("$> ");
-
-        }elseif (strpos($prompt, "display") !== false) {
+        } elseif (strpos($prompt, "display") !== false) {
             $table = display($x, $y, $coords);
-            $prompt = readline("$> ");
-        } else {
-            $prompt = readline("$> ");
         }
-    } while ($prompt != "exit");
+
+        
+        if ($count2 > 2 && $prompt != "") {
+            $count3++;
+            if ($win1 == 2) {
+                echo "Player 2 win !!\n";
+                $playerone = array();
+                $playertwo = array();
+                $count1 = 0;
+                $count2 = 0;
+                $count3 = 0;
+                $win1 = 0;
+                $win2 = 0;
+                $player = "one";
+                echo "Player 1, place your 2 ships :\n";
+                $prompt = readline("Player 1 $> ");
+            }
+
+            if ($win2 == 2) {
+                echo "Player 2 win !!\n";
+                $playerone = array();
+                $playertwo = array();
+                $count1 = 0;
+                $count2 = 0;
+                $count3 = 0;
+                $win1 = 0;
+                $win2 = 0;
+                $player = "one";
+                echo "Player 1, place your 2 ships :\n";
+                $prompt = readline("Player 1 $> ");
+            }
+
+            if ($count3 % 2 != 0) {
+                $player = "one";
+                echo "Player 1, launch your attack :\n";
+                $prompt = readline("Player 1 $> ");
+            } else {
+                $player = "two";
+                echo "Player 2, launch your attack :\n";
+                $prompt = readline("Player 2 $> ");
+            }
+        } else {
+            if ($player == "one") {
+                $prompt = readline("Player 1 $> ");
+            } else {
+                $prompt = readline("Player 2 $> ");
+            }
+        }
+
+    } while (strpos($prompt, "exit") !== true);
 }
 
 
-function remove_coord($coord, &$coords)
+function remove_coord($coord, &$player)
 {
-    if (in_array($coord,$coords)) {
-        $key = array_search($coord,$coords);
-        unset($coords[$key]);
+    if (in_array($coord, $player)) {
+        $key = array_search($coord, $player);
+        unset($player[$key]);
         return "";
-    }else{
+    } else {
         return "No cross exists at this location\n";
     }
 }
